@@ -1,0 +1,18 @@
+package QuizApplication;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.regex.Pattern;
+
+public class TeacherLoginPage extends JFrame {
+	 public TeacherLoginPage() {
+		 
+	 }
+	 
+	 public static void main(String[] args) {
+		 SwingUtilities.invokeLater(() -> {
+	         new TeacherLoginPage().setVisible(true);
+	     });
+	 }
+}

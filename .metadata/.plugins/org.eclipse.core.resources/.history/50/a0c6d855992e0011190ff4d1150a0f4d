@@ -1,0 +1,7 @@
+package QuizApplication.config;
+
+import java.sql.*;
+
+public class DBConnection {
+
+}

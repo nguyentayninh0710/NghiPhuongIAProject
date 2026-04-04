@@ -1,0 +1,146 @@
+package QuizApplication;
+
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
+
+public class HomePage extends JFrame {
+
+	private static final long serialVersionUID = 1L;
+	private JPanel contentPane;
+
+	/**
+	 * Launch the application.
+	 */
+	public static void main(String[] args) {
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					HomePage frame = new HomePage();
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+	}
+
+	/**
+	 * Create the frame.
+	 */
+	public HomePage() {
+		setTitle("Quiz Education System");
+		setSize(450, 350);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setLocationRelativeTo(null);
+		
+		contentPane = new JPanel(new BorderLayout());
+		
+		JLabel titaleLable = new JLabel("Quiz Education System", JLabel.CENTER); 
+		titaleLable.setOpaque(true);
+		titaleLable.setBackground(new Color(30, 60, 90));
+		titaleLable.setForeground(Color.WHITE);
+		titaleLable.setFont(new Font("Arial", Font.BOLD, 20));
+		titaleLable.setPreferredSize(new Dimension(450, 60));
+		
+		contentPane.add(titaleLable, BorderLayout.NORTH);
+		
+		
+		// center panel	
+		JPanel centerPanel = new JPanel(new GridLayout(1, 2, 30, 0));
+		centerPanel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+		centerPanel.setBackground(new Color(230, 230, 230));
+		//Load images via icons 
+		ImageIcon teacherIcon = new ImageIcon(getClass().getResource("/images/teacher.jpg"));
+		ImageIcon studentIcon = new ImageIcon(getClass().getResource("/images/student.jpg"));
+		teacherIcon = new ImageIcon(teacherIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH));
+		studentIcon = new ImageIcon(studentIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH));	
+		//custom teacher button 	
+        JButton teacherBtn = new JButton("Teacher mode", teacherIcon) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+
+                super.paintComponent(g);
+                g2.dispose();
+            }
+
+            @Override
+            protected void paintBorder(Graphics g) {}
+        };
+        
+        teacherBtn.setHorizontalTextPosition(JButton.CENTER);
+        teacherBtn.setVerticalTextPosition(JButton.BOTTOM);
+        teacherBtn.setBackground(new Color(255, 140, 80));
+        teacherBtn.setForeground(Color.WHITE);
+        teacherBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        teacherBtn.setFocusPainted(false);
+        teacherBtn.setContentAreaFilled(false);
+        teacherBtn.setBorderPainted(false);
+        teacherBtn.setOpaque(false);
+        //Hover 
+        teacherBtn.addMouseListener(new MouseAdapter() {
+        	public void mouseEntered(MouseEvent e) {
+        		teacherBtn.setBackground(new Color(255, 140, 60));
+        	}
+        	public void mouseExited(MouseEvent e) {
+        		teacherBtn.setBackground(new Color(255, 140, 80));
+        	}
+		});
+        
+        JButton studentBtn = new JButton("Student mode", studentIcon) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 30, 30);
+
+                super.paintComponent(g);
+                g2.dispose();
+            }
+
+            @Override
+            protected void paintBorder(Graphics g) {}
+        };
+
+        studentBtn.setHorizontalTextPosition(JButton.CENTER);
+        studentBtn.setVerticalTextPosition(JButton.BOTTOM);
+        studentBtn.setBackground(new Color(50, 150, 140));
+        studentBtn.setForeground(Color.WHITE);
+        studentBtn.setFont(new Font("Arial", Font.BOLD, 14));
+        studentBtn.setFocusPainted(false);
+        studentBtn.setContentAreaFilled(false);
+        studentBtn.setOpaque(false);
+		
+        centerPanel.add(teacherBtn);
+        centerPanel.add(studentBtn);
+		
+		contentPane.add(centerPanel, BorderLayout.CENTER);
+		add(contentPane);
+
+	}
+}
