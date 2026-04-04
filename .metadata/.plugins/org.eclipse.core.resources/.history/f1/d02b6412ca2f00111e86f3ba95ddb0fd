@@ -1,0 +1,5 @@
+package QuizApplication.model;
+
+public class Enroll {
+
+}
