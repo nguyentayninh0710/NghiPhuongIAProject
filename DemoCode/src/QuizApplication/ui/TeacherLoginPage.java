@@ -2,6 +2,11 @@ package QuizApplication.ui;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+
+import QuizApplication.auth.SessionManager;
+import QuizApplication.model.LoginResult;
+import QuizApplication.service.TeacherService;
+
 import java.awt.*;
 import java.util.regex.Pattern;
 
@@ -10,6 +15,8 @@ public class TeacherLoginPage extends JFrame {
     private RoundedTextField emailField;
     private RoundedPasswordField passField;
     private RoundedButton loginBtn;
+
+    private final TeacherService teacherService = new TeacherService();
 
     public TeacherLoginPage() {
         setTitle("Teacher Sign-In");
@@ -90,36 +97,77 @@ public class TeacherLoginPage extends JFrame {
     }
 
     private void handleLogin() {
-        String email = emailField.getText().trim();
+        String email = emailField.getText();
         String password = new String(passField.getPassword());
 
+        resetFieldState();
+        setLoginButtonEnabled(false);
+
+        try {
+            LoginResult result = teacherService.loginTeacher(email, password);
+
+            if (result.isSuccess()) {
+                SessionManager.setCurrentTeacher(result.getTeacher());
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Login success!\nHello, " + result.getTeacher().getTeacherName(),
+                        "Notice",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+
+
+
+            } else {
+                applyErrorState(email, password, result.getMessage());
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Have error!\nDetail: " + ex.getMessage(),
+                    "Error system",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        } finally {
+            setLoginButtonEnabled(true);
+        }
+    }
+
+    private void resetFieldState() {
         emailField.setNormalBackground();
         passField.setNormalBackground();
+    }
 
-        if (email.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Email not empty");
-            emailField.setErrorBackground();
-            return;
-        }
-
-        if (!Pattern.matches("^[A-Za-z0-9+_.-]+@(.+)$", email)) {
-            JOptionPane.showMessageDialog(this, "Email invalid");
-            emailField.setErrorBackground();
-            return;
-        }
-
-        if (password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Password not empty");
-            passField.setErrorBackground();
-            return;
-        }
-
-
+    private void applyErrorState(String email, String password, String message) {
         JOptionPane.showMessageDialog(
                 this,
-                "Successfully"
+                message,
+                "Login fail",
+                JOptionPane.WARNING_MESSAGE
         );
 
+        if (email == null || email.trim().isEmpty() || !isLikelyValidEmail(email)) {
+            emailField.setErrorBackground();
+        }
+
+        if (password == null || password.trim().isEmpty() || message.toLowerCase().contains("password")) {
+            passField.setErrorBackground();
+        }
+
+        if (message.toLowerCase().contains("incorrect email or password")) {
+            emailField.setErrorBackground();
+            passField.setErrorBackground();
+        }
+    }
+
+    private boolean isLikelyValidEmail(String email) {
+        return email != null && email.trim().contains("@");
+    }
+
+    private void setLoginButtonEnabled(boolean enabled) {
+        loginBtn.setEnabled(enabled);
+        loginBtn.repaint();
     }
 
     public static void main(String[] args) {
@@ -247,14 +295,22 @@ public class TeacherLoginPage extends JFrame {
             int boxWidth = getWidth() - 8;
             int boxHeight = getHeight() - 12;
 
-            g2.setColor(new Color(120, 75, 55, 90));
-            g2.fillRoundRect(shadowX, shadowY, boxWidth, boxHeight, radius, radius);
+            if (isEnabled()) {
+                g2.setColor(new Color(120, 75, 55, 90));
+                g2.fillRoundRect(shadowX, shadowY, boxWidth, boxHeight, radius, radius);
 
-            g2.setColor(new Color(241, 214, 200));
-            g2.fillRoundRect(0, 0, boxWidth, boxHeight, radius, radius);
+                g2.setColor(new Color(241, 214, 200));
+                g2.fillRoundRect(0, 0, boxWidth, boxHeight, radius, radius);
+            } else {
+                g2.setColor(new Color(160, 160, 160, 70));
+                g2.fillRoundRect(shadowX, shadowY, boxWidth, boxHeight, radius, radius);
+
+                g2.setColor(new Color(220, 220, 220));
+                g2.fillRoundRect(0, 0, boxWidth, boxHeight, radius, radius);
+            }
 
             g2.setFont(getFont());
-            g2.setColor(getForeground());
+            g2.setColor(isEnabled() ? getForeground() : new Color(130, 130, 130));
             FontMetrics fm = g2.getFontMetrics();
 
             String text = getText();
