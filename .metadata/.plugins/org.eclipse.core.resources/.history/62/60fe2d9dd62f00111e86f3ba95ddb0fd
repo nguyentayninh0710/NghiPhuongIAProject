@@ -1,0 +1,388 @@
+package QuizApplication.ui;
+
+import QuizApplication.model.Teacher;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+
+public class AddQuiz extends JFrame {
+
+    private final Teacher currentTeacher;
+
+    private final String quizName;
+    private final String tags;
+    private final String level;
+    private final String startDate;
+    private final String endDate;
+    private final String duration;
+    private final String assignedClass;
+
+    private JTextArea txtQuestionContent;
+    private JTextField txtOptionA;
+    private JTextField txtOptionB;
+    private JTextField txtOptionC;
+    private JTextField txtOptionD;
+    private JTextField txtExplanation;
+
+    private JCheckBox cbA;
+    private JCheckBox cbB;
+    private JCheckBox cbC;
+    private JCheckBox cbD;
+
+    private JButton btnAddQuestion;
+    private JButton btnDeleteQuestion;
+    private JButton btnBack;
+
+    private DefaultListModel<String> questionListModel;
+    private JList<String> questionList;
+
+    private int questionCount = 0;
+
+    public AddQuiz(Teacher teacher,
+                   String quizName,
+                   String tags,
+                   String level,
+                   String startDate,
+                   String endDate,
+                   String duration,
+                   String assignedClass) {
+        this.currentTeacher = teacher;
+        this.quizName = quizName;
+        this.tags = tags;
+        this.level = level;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.duration = duration;
+        this.assignedClass = assignedClass;
+
+        initComponents();
+        setVisible(true);
+    }
+
+    private void initComponents() {
+        setTitle("Add Quiz Questions");
+        setSize(950, 720);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setResizable(false);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(new Color(220, 223, 237));
+        setContentPane(mainPanel);
+
+        // ===== HEADER =====
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setPreferredSize(new Dimension(950, 110));
+        headerPanel.setBackground(new Color(43, 31, 115));
+
+        JLabel lblTitle = new JLabel("[" + quizName + "]", SwingConstants.CENTER);
+        lblTitle.setForeground(Color.WHITE);
+        lblTitle.setFont(new Font("SansSerif", Font.BOLD, 34));
+        lblTitle.setBorder(new EmptyBorder(20, 10, 20, 10));
+        headerPanel.add(lblTitle, BorderLayout.CENTER);
+
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
+
+        // ===== BODY =====
+        JPanel bodyPanel = new JPanel();
+        bodyPanel.setBackground(new Color(201, 207, 231));
+        bodyPanel.setLayout(null);
+
+        JLabel lblQuestion = new JLabel("Question");
+        lblQuestion.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        lblQuestion.setForeground(new Color(44, 74, 112));
+        lblQuestion.setBounds(70, 25, 120, 30);
+        bodyPanel.add(lblQuestion);
+
+        txtQuestionContent = new JTextArea();
+        txtQuestionContent.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        txtQuestionContent.setLineWrap(true);
+        txtQuestionContent.setWrapStyleWord(true);
+
+        JScrollPane spQuestion = new JScrollPane(txtQuestionContent);
+        spQuestion.setBounds(70, 60, 780, 85);
+        bodyPanel.add(spQuestion);
+
+        txtOptionA = new JTextField();
+        txtOptionB = new JTextField();
+        txtOptionC = new JTextField();
+        txtOptionD = new JTextField();
+
+        txtOptionA.setBounds(70, 165, 280, 34);
+        txtOptionB.setBounds(430, 165, 280, 34);
+        txtOptionC.setBounds(70, 215, 280, 34);
+        txtOptionD.setBounds(430, 215, 280, 34);
+
+        txtOptionA.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        txtOptionB.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        txtOptionC.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        txtOptionD.setFont(new Font("SansSerif", Font.PLAIN, 15));
+
+        bodyPanel.add(txtOptionA);
+        bodyPanel.add(txtOptionB);
+        bodyPanel.add(txtOptionC);
+        bodyPanel.add(txtOptionD);
+
+        cbA = new JCheckBox("Correct");
+        cbB = new JCheckBox("Correct");
+        cbC = new JCheckBox("Correct");
+        cbD = new JCheckBox("Correct");
+
+        styleCheckBox(cbA);
+        styleCheckBox(cbB);
+        styleCheckBox(cbC);
+        styleCheckBox(cbD);
+
+        cbA.setBounds(360, 165, 80, 34);
+        cbB.setBounds(720, 165, 80, 34);
+        cbC.setBounds(360, 215, 80, 34);
+        cbD.setBounds(720, 215, 80, 34);
+
+        bodyPanel.add(cbA);
+        bodyPanel.add(cbB);
+        bodyPanel.add(cbC);
+        bodyPanel.add(cbD);
+
+        JLabel lblNote = new JLabel("Note: Select exactly one correct answer.");
+        lblNote.setFont(new Font("SansSerif", Font.ITALIC, 14));
+        lblNote.setForeground(new Color(55, 55, 90));
+        lblNote.setBounds(70, 260, 280, 25);
+        bodyPanel.add(lblNote);
+
+        JLabel lblExplanation = new JLabel("Explanation");
+        lblExplanation.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        lblExplanation.setForeground(new Color(44, 74, 112));
+        lblExplanation.setBounds(70, 295, 150, 30);
+        bodyPanel.add(lblExplanation);
+
+        txtExplanation = new JTextField();
+        txtExplanation.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        txtExplanation.setBounds(70, 330, 780, 36);
+        bodyPanel.add(txtExplanation);
+
+        btnAddQuestion = new JButton("Add New Question");
+        styleButton(btnAddQuestion, new Color(38, 21, 200));
+        btnAddQuestion.setBounds(300, 395, 260, 42);
+        bodyPanel.add(btnAddQuestion);
+
+        btnDeleteQuestion = new JButton("Delete Selected");
+        styleButton(btnDeleteQuestion, new Color(171, 85, 47));
+        btnDeleteQuestion.setBounds(70, 520, 170, 42);
+        bodyPanel.add(btnDeleteQuestion);
+
+        btnBack = new JButton("Back");
+        styleButton(btnBack, new Color(120, 120, 120));
+        btnBack.setBounds(680, 520, 170, 42);
+        bodyPanel.add(btnBack);
+
+        JLabel lblList = new JLabel("Added Questions");
+        lblList.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        lblList.setForeground(new Color(44, 74, 112));
+        lblList.setBounds(70, 455, 180, 25);
+        bodyPanel.add(lblList);
+
+        questionListModel = new DefaultListModel<>();
+        questionList = new JList<>(questionListModel);
+        questionList.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        questionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        JScrollPane spQuestionList = new JScrollPane(questionList);
+        spQuestionList.setBounds(70, 485, 580, 100);
+        bodyPanel.add(spQuestionList);
+
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new GridLayout(6, 1, 5, 5));
+        infoPanel.setBackground(new Color(201, 207, 231));
+        infoPanel.setBounds(70, 590, 780, 65);
+
+        JLabel lblInfo1 = new JLabel("Tags: " + tags);
+        JLabel lblInfo2 = new JLabel("Level: " + level);
+        JLabel lblInfo3 = new JLabel("Start Date: " + startDate);
+        JLabel lblInfo4 = new JLabel("End Date: " + endDate);
+        JLabel lblInfo5 = new JLabel("Duration: " + duration + " minutes");
+        JLabel lblInfo6 = new JLabel("Assigned Class: " + assignedClass);
+
+        Font infoFont = new Font("SansSerif", Font.PLAIN, 13);
+        lblInfo1.setFont(infoFont);
+        lblInfo2.setFont(infoFont);
+        lblInfo3.setFont(infoFont);
+        lblInfo4.setFont(infoFont);
+        lblInfo5.setFont(infoFont);
+        lblInfo6.setFont(infoFont);
+
+        infoPanel.add(lblInfo1);
+        infoPanel.add(lblInfo2);
+        infoPanel.add(lblInfo3);
+        infoPanel.add(lblInfo4);
+        infoPanel.add(lblInfo5);
+        infoPanel.add(lblInfo6);
+
+        bodyPanel.add(infoPanel);
+
+        mainPanel.add(bodyPanel, BorderLayout.CENTER);
+
+        registerEvents();
+    }
+
+    private void styleButton(JButton button, Color bgColor) {
+        button.setFont(new Font("SansSerif", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setBackground(bgColor);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void styleCheckBox(JCheckBox checkBox) {
+        checkBox.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        checkBox.setBackground(new Color(201, 207, 231));
+        checkBox.setFocusPainted(false);
+    }
+
+    private void registerEvents() {
+        cbA.addActionListener(e -> keepOnlyOneCorrect(cbA));
+        cbB.addActionListener(e -> keepOnlyOneCorrect(cbB));
+        cbC.addActionListener(e -> keepOnlyOneCorrect(cbC));
+        cbD.addActionListener(e -> keepOnlyOneCorrect(cbD));
+
+        btnAddQuestion.addActionListener(e -> addQuestion());
+        btnDeleteQuestion.addActionListener(e -> deleteSelectedQuestion());
+
+        btnBack.addActionListener(e -> {
+            new CreateNewQuiz(currentTeacher);
+            dispose();
+        });
+    }
+
+    private void keepOnlyOneCorrect(JCheckBox selected) {
+        JCheckBox[] boxes = {cbA, cbB, cbC, cbD};
+        for (JCheckBox box : boxes) {
+            if (box != selected) {
+                box.setSelected(false);
+            }
+        }
+    }
+
+    private void addQuestion() {
+        String content = txtQuestionContent.getText().trim();
+        String a = txtOptionA.getText().trim();
+        String b = txtOptionB.getText().trim();
+        String c = txtOptionC.getText().trim();
+        String d = txtOptionD.getText().trim();
+        String explanation = txtExplanation.getText().trim();
+
+        if (content.isEmpty() || a.isEmpty() || b.isEmpty() || c.isEmpty() || d.isEmpty() || explanation.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please fill in all question fields.",
+                    "Missing Information",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        String correctAnswer = getCorrectAnswer();
+        if (correctAnswer == null) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select exactly one correct answer.",
+                    "Correct Answer Required",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        questionCount++;
+        questionListModel.addElement("Question " + questionCount + " - Correct Answer: " + correctAnswer);
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Question added to quiz successfully.",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        clearQuestionForm();
+    }
+
+    private String getCorrectAnswer() {
+        int selectedCount = 0;
+        String answer = null;
+
+        if (cbA.isSelected()) {
+            selectedCount++;
+            answer = "A";
+        }
+        if (cbB.isSelected()) {
+            selectedCount++;
+            answer = "B";
+        }
+        if (cbC.isSelected()) {
+            selectedCount++;
+            answer = "C";
+        }
+        if (cbD.isSelected()) {
+            selectedCount++;
+            answer = "D";
+        }
+
+        if (selectedCount != 1) {
+            return null;
+        }
+
+        return answer;
+    }
+
+    private void clearQuestionForm() {
+        txtQuestionContent.setText("");
+        txtOptionA.setText("");
+        txtOptionB.setText("");
+        txtOptionC.setText("");
+        txtOptionD.setText("");
+        txtExplanation.setText("");
+
+        cbA.setSelected(false);
+        cbB.setSelected(false);
+        cbC.setSelected(false);
+        cbD.setSelected(false);
+    }
+
+    private void deleteSelectedQuestion() {
+        int selectedIndex = questionList.getSelectedIndex();
+
+        if (selectedIndex == -1) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please select a question in the list to delete.",
+                    "No Question Selected",
+                    JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        questionListModel.remove(selectedIndex);
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Selected question deleted.",
+                "Deleted",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            Teacher demoTeacher = new Teacher("T001", "Nguyen Minh Anh", "minhanh.teacher@gmail.com");
+            new AddQuiz(
+                    demoTeacher,
+                    "Java Basics Quiz",
+                    "Java, OOP",
+                    "Easy",
+                    "2026-04-10",
+                    "2026-04-20",
+                    "30",
+                    "CS101 - Introduction to Programming"
+            );
+        });
+    }
+}
