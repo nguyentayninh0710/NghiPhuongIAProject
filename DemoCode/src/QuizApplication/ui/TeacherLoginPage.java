@@ -5,10 +5,10 @@ import javax.swing.border.EmptyBorder;
 
 import QuizApplication.auth.SessionManager;
 import QuizApplication.model.LoginResult;
+import QuizApplication.model.Teacher;
 import QuizApplication.service.TeacherService;
 
 import java.awt.*;
-import java.util.regex.Pattern;
 
 public class TeacherLoginPage extends JFrame {
 
@@ -97,7 +97,7 @@ public class TeacherLoginPage extends JFrame {
     }
 
     private void handleLogin() {
-        String email = emailField.getText();
+        String email = emailField.getText().trim();
         String password = new String(passField.getPassword());
 
         resetFieldState();
@@ -107,17 +107,17 @@ public class TeacherLoginPage extends JFrame {
             LoginResult result = teacherService.loginTeacher(email, password);
 
             if (result.isSuccess()) {
-                SessionManager.setCurrentTeacher(result.getTeacher());
+                Teacher teacher = result.getTeacher();
+                SessionManager.setCurrentTeacher(teacher);
 
                 JOptionPane.showMessageDialog(
                         this,
-                        "Login success!\nHello, " + result.getTeacher().getTeacherName(),
+                        "Login success!\nHello, " + teacher.getTeacherName(),
                         "Notice",
                         JOptionPane.INFORMATION_MESSAGE
                 );
 
-
-
+                openTeacherDashboard(teacher);
             } else {
                 applyErrorState(email, password, result.getMessage());
             }
@@ -132,6 +132,14 @@ public class TeacherLoginPage extends JFrame {
         } finally {
             setLoginButtonEnabled(true);
         }
+    }
+
+    private void openTeacherDashboard(Teacher teacher) {
+        SwingUtilities.invokeLater(() -> {
+            TeacherDashboard dashboard = new TeacherDashboard(teacher);
+            dashboard.setVisible(true);
+        });
+        dispose();
     }
 
     private void resetFieldState() {
@@ -162,7 +170,7 @@ public class TeacherLoginPage extends JFrame {
     }
 
     private boolean isLikelyValidEmail(String email) {
-        return email != null && email.trim().contains("@");
+        return email != null && email.contains("@");
     }
 
     private void setLoginButtonEnabled(boolean enabled) {

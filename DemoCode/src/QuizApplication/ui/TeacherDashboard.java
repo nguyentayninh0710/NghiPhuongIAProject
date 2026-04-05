@@ -18,19 +18,23 @@ public class TeacherDashboard extends JFrame {
 
     private JButton btnCreateNewQuiz;
     private JButton btnResultsDashboard;
+
     private JLabel lblWelcome;
+    private JLabel lblTeacherIdValue;
+    private JLabel lblTeacherNameValue;
+    private JLabel lblTeacherEmailValue;
 
     public TeacherDashboard(Teacher teacher) {
         this.currentTeacher = teacher;
 
         initComponents();
+        loadTeacherInfo();
         loadSampleDashboardData();
-        setVisible(true);
     }
 
     private void initComponents() {
         setTitle("Teacher Dashboard");
-        setSize(720, 560);
+        setSize(780, 640);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
@@ -42,7 +46,7 @@ public class TeacherDashboard extends JFrame {
 
         // ===== HEADER =====
         JPanel headerPanel = new JPanel();
-        headerPanel.setPreferredSize(new Dimension(720, 95));
+        headerPanel.setPreferredSize(new Dimension(780, 95));
         headerPanel.setBackground(new Color(171, 85, 47));
         headerPanel.setLayout(new BorderLayout());
 
@@ -60,16 +64,19 @@ public class TeacherDashboard extends JFrame {
         bodyPanel.setLayout(new BoxLayout(bodyPanel, BoxLayout.Y_AXIS));
         bodyPanel.setBorder(new EmptyBorder(18, 60, 25, 60));
 
-        String teacherName = (currentTeacher != null && currentTeacher.getTeacherName() != null)
-                ? currentTeacher.getTeacherName()
-                : "Teacher";
-
-        lblWelcome = new JLabel("Welcome, " + teacherName);
+        lblWelcome = new JLabel("Welcome, Teacher");
         lblWelcome.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lblWelcome.setForeground(new Color(55, 55, 55));
         lblWelcome.setAlignmentX(Component.LEFT_ALIGNMENT);
         lblWelcome.setBorder(new EmptyBorder(0, 0, 14, 0));
         bodyPanel.add(lblWelcome);
+
+        // ===== TEACHER INFO PANEL =====
+        JPanel infoPanel = buildTeacherInfoPanel();
+        infoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        bodyPanel.add(infoPanel);
+
+        bodyPanel.add(Box.createVerticalStrut(20));
 
         // ===== BUTTONS =====
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 28, 0));
@@ -145,6 +152,75 @@ public class TeacherDashboard extends JFrame {
         registerEvents();
     }
 
+    private JPanel buildTeacherInfoPanel() {
+        JPanel infoPanel = new JPanel(new GridLayout(3, 2, 12, 10));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setMaximumSize(new Dimension(560, 110));
+        infoPanel.setPreferredSize(new Dimension(560, 110));
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(210, 210, 210)),
+                new EmptyBorder(12, 16, 12, 16)
+        ));
+
+        JLabel lblTeacherId = new JLabel("Teacher ID:");
+        JLabel lblTeacherName = new JLabel("Teacher Name:");
+        JLabel lblTeacherEmail = new JLabel("Teacher Email:");
+
+        styleInfoLabel(lblTeacherId);
+        styleInfoLabel(lblTeacherName);
+        styleInfoLabel(lblTeacherEmail);
+
+        lblTeacherIdValue = new JLabel("-");
+        lblTeacherNameValue = new JLabel("-");
+        lblTeacherEmailValue = new JLabel("-");
+
+        styleInfoValue(lblTeacherIdValue);
+        styleInfoValue(lblTeacherNameValue);
+        styleInfoValue(lblTeacherEmailValue);
+
+        infoPanel.add(lblTeacherId);
+        infoPanel.add(lblTeacherIdValue);
+        infoPanel.add(lblTeacherName);
+        infoPanel.add(lblTeacherNameValue);
+        infoPanel.add(lblTeacherEmail);
+        infoPanel.add(lblTeacherEmailValue);
+
+        return infoPanel;
+    }
+
+    private void styleInfoLabel(JLabel label) {
+        label.setFont(new Font("SansSerif", Font.BOLD, 15));
+        label.setForeground(new Color(70, 70, 70));
+    }
+
+    private void styleInfoValue(JLabel label) {
+        label.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        label.setForeground(new Color(30, 30, 30));
+    }
+
+    private void loadTeacherInfo() {
+        String teacherId = "N/A";
+        String teacherName = "Teacher";
+        String teacherEmail = "N/A";
+
+        if (currentTeacher != null) {
+            if (currentTeacher.getTeacherId() != null && !currentTeacher.getTeacherId().trim().isEmpty()) {
+                teacherId = currentTeacher.getTeacherId();
+            }
+            if (currentTeacher.getTeacherName() != null && !currentTeacher.getTeacherName().trim().isEmpty()) {
+                teacherName = currentTeacher.getTeacherName();
+            }
+            if (currentTeacher.getTeacherEmail() != null && !currentTeacher.getTeacherEmail().trim().isEmpty()) {
+                teacherEmail = currentTeacher.getTeacherEmail();
+            }
+        }
+
+        lblWelcome.setText("Welcome, " + teacherName);
+        lblTeacherIdValue.setText(teacherId);
+        lblTeacherNameValue.setText(teacherName);
+        lblTeacherEmailValue.setText(teacherEmail);
+    }
+
     private void styleButton(JButton button, Color bgColor) {
         button.setPreferredSize(new Dimension(190, 42));
         button.setFocusPainted(false);
@@ -205,7 +281,7 @@ public class TeacherDashboard extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             Teacher demoTeacher = new Teacher("T001", "Nguyen Minh Anh", "minhanh.teacher@gmail.com");
-            new TeacherDashboard(demoTeacher);
+            new TeacherDashboard(demoTeacher).setVisible(true);
         });
     }
 }
