@@ -41,7 +41,10 @@ public class AddQuiz extends JFrame {
     private int questionCount = 1;
     private final List<String> addedQuestions = new ArrayList<>();
 
+    private final String quizId;
+
     public AddQuiz(Teacher teacher,
+                   String quizId,
                    String quizName,
                    String tags,
                    String level,
@@ -50,6 +53,7 @@ public class AddQuiz extends JFrame {
                    String duration,
                    String assignedClass) {
         this.currentTeacher = teacher;
+        this.quizId = quizId;
         this.quizName = quizName;
         this.tags = tags;
         this.level = level;
@@ -345,19 +349,19 @@ public class AddQuiz extends JFrame {
             );
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            Teacher demoTeacher = new Teacher("T001", "Nguyen Minh Anh", "minhanh.teacher@gmail.com");
-            new AddQuiz(
-                    demoTeacher,
-                    "Java Basics Quiz",
-                    "Java, OOP",
-                    "Easy",
-                    "2026-04-10",
-                    "2026-04-20",
-                    "30",
-                    "CS101 - Introduction to Programming"
-            );
-        });
-    }
+//    public static void main(String[] args) {
+//        SwingUtilities.invokeLater(() -> {
+//            Teacher demoTeacher = new Teacher("T001", "Nguyen Minh Anh", "minhanh.teacher@gmail.com");
+//            new AddQuiz(
+//                    demoTeacher,
+//                    "Java Basics Quiz",
+//                    "Java, OOP",
+//                    "Easy",
+//                    "2026-04-10",
+//                    "2026-04-20",
+//                    "30",
+//                    "CS101 - Introduction to Programming"
+//            );
+//        });
+//    }
 }
