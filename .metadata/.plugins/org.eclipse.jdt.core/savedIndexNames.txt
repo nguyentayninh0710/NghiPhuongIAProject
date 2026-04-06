@@ -1,6 +1,5 @@
 INDEX VERSION 1.134+D:\Private\_Lam viec\Teach\Computer Science\IBCS\Class IBHL - Phuong\.metadata\.plugins\org.eclipse.jdt.core
 3636387724.index
 1865797976.index
-1599976763.index
 3520430310.index
 3328685900.index
