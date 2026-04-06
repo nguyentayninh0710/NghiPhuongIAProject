@@ -1,6 +1,9 @@
 package QuizApplication.ui;
 
+import QuizApplication.model.ClassRoom;
+import QuizApplication.model.QuizTag;
 import QuizApplication.model.Teacher;
+import QuizApplication.service.QuizService;
 import com.github.lgooddatepicker.components.DatePicker;
 import com.github.lgooddatepicker.components.DatePickerSettings;
 
@@ -9,16 +12,23 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class CreateNewQuiz extends JFrame {
 
     private final Teacher currentTeacher;
+    private final QuizService quizService;
 
     private JTextField txtQuizName;
-    private JTextField txtTags;
     private JTextField txtDuration;
 
+    private JComboBox<String> cbQuizTags;
     private JComboBox<String> cbAssignedClasses;
+
+    private final Map<String, Integer> quizTagMap = new LinkedHashMap<>();
+    private final Map<String, String> classMap = new LinkedHashMap<>();
 
     private JRadioButton rbHard;
     private JRadioButton rbMedium;
@@ -32,7 +42,10 @@ public class CreateNewQuiz extends JFrame {
 
     public CreateNewQuiz(Teacher teacher) {
         this.currentTeacher = teacher;
+        this.quizService = new QuizService();
+
         initComponents();
+        loadDropdownData();
         setVisible(true);
     }
 
@@ -47,7 +60,6 @@ public class CreateNewQuiz extends JFrame {
         mainPanel.setBackground(new Color(220, 223, 237));
         setContentPane(mainPanel);
 
-        // ===== HEADER =====
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setPreferredSize(new Dimension(860, 110));
         headerPanel.setBackground(new Color(43, 31, 115));
@@ -60,12 +72,10 @@ public class CreateNewQuiz extends JFrame {
 
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // ===== BODY =====
         JPanel bodyPanel = new JPanel();
         bodyPanel.setBackground(new Color(201, 207, 231));
         bodyPanel.setLayout(null);
 
-        // Quiz Name
         JLabel lblQuizName = new JLabel("Quiz Name");
         lblQuizName.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lblQuizName.setForeground(new Color(44, 74, 112));
@@ -77,7 +87,6 @@ public class CreateNewQuiz extends JFrame {
         txtQuizName.setBounds(70, 60, 420, 32);
         bodyPanel.add(txtQuizName);
 
-        // Level
         JLabel lblLevel = new JLabel("Level");
         lblLevel.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lblLevel.setForeground(new Color(44, 74, 112));
@@ -106,19 +115,17 @@ public class CreateNewQuiz extends JFrame {
         bodyPanel.add(rbMedium);
         bodyPanel.add(rbEasy);
 
-        // Tags
-        JLabel lblTags = new JLabel("Tags");
+        JLabel lblTags = new JLabel("Quiz Tag");
         lblTags.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lblTags.setForeground(new Color(44, 74, 112));
         lblTags.setBounds(70, 110, 150, 30);
         bodyPanel.add(lblTags);
 
-        txtTags = new JTextField();
-        txtTags.setFont(new Font("SansSerif", Font.PLAIN, 16));
-        txtTags.setBounds(70, 140, 420, 32);
-        bodyPanel.add(txtTags);
+        cbQuizTags = new JComboBox<>();
+        cbQuizTags.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        cbQuizTags.setBounds(70, 140, 420, 32);
+        bodyPanel.add(cbQuizTags);
 
-     // Start Date
         JLabel lblStartDate = new JLabel("Start Date");
         lblStartDate.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lblStartDate.setForeground(new Color(44, 74, 112));
@@ -138,7 +145,6 @@ public class CreateNewQuiz extends JFrame {
         dpStartDate.getComponentToggleCalendarButton().setCursor(new Cursor(Cursor.HAND_CURSOR));
         bodyPanel.add(dpStartDate);
 
-        // End Date
         JLabel lblEndDate = new JLabel("End Date");
         lblEndDate.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lblEndDate.setForeground(new Color(44, 74, 112));
@@ -158,7 +164,6 @@ public class CreateNewQuiz extends JFrame {
         dpEndDate.getComponentToggleCalendarButton().setCursor(new Cursor(Cursor.HAND_CURSOR));
         bodyPanel.add(dpEndDate);
 
-        // Duration
         JLabel lblDuration = new JLabel("Duration (minutes)");
         lblDuration.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lblDuration.setForeground(new Color(44, 74, 112));
@@ -170,8 +175,7 @@ public class CreateNewQuiz extends JFrame {
         txtDuration.setBounds(70, 305, 170, 32);
         bodyPanel.add(txtDuration);
 
-        // Assigned Classes
-        JLabel lblAssignedClasses = new JLabel("Assigned Classes");
+        JLabel lblAssignedClasses = new JLabel("Assigned Class");
         lblAssignedClasses.setFont(new Font("SansSerif", Font.PLAIN, 18));
         lblAssignedClasses.setForeground(new Color(44, 74, 112));
         lblAssignedClasses.setBounds(70, 390, 180, 30);
@@ -180,21 +184,13 @@ public class CreateNewQuiz extends JFrame {
         cbAssignedClasses = new JComboBox<>();
         cbAssignedClasses.setFont(new Font("SansSerif", Font.PLAIN, 16));
         cbAssignedClasses.setBounds(70, 420, 420, 34);
-
-        // Sample UI data
-        cbAssignedClasses.addItem("SE06201 - Software Engineering");
-        cbAssignedClasses.addItem("CS101 - Introduction to Programming");
-        cbAssignedClasses.addItem("DB202 - Database Systems");
-
         bodyPanel.add(cbAssignedClasses);
 
-        // Back button
         btnBack = new JButton("Back");
         styleActionButton(btnBack, new Color(120, 120, 120));
         btnBack.setBounds(510, 470, 110, 46);
         bodyPanel.add(btnBack);
 
-        // Create button
         btnCreate = new JButton("Create");
         styleActionButton(btnCreate, new Color(43, 31, 115));
         btnCreate.setBounds(640, 470, 130, 46);
@@ -203,6 +199,50 @@ public class CreateNewQuiz extends JFrame {
         mainPanel.add(bodyPanel, BorderLayout.CENTER);
 
         registerEvents();
+    }
+
+    private void loadDropdownData() {
+        loadQuizTags();
+        loadAssignedClasses();
+    }
+
+    private void loadQuizTags() {
+        cbQuizTags.removeAllItems();
+        quizTagMap.clear();
+
+        List<QuizTag> quizTags = quizService.getAllQuizTags();
+
+        for (QuizTag quizTag : quizTags) {
+            String display = quizTag.getQuizTagDescription();
+            cbQuizTags.addItem(display);
+            quizTagMap.put(display, quizTag.getQuizTagId());
+        }
+
+        if (cbQuizTags.getItemCount() == 0) {
+            cbQuizTags.addItem("No quiz tag available");
+        }
+    }
+
+    private void loadAssignedClasses() {
+        cbAssignedClasses.removeAllItems();
+        classMap.clear();
+
+        if (currentTeacher == null || currentTeacher.getTeacherId() == null) {
+            cbAssignedClasses.addItem("No class available");
+            return;
+        }
+
+        List<ClassRoom> classes = quizService.getClassesByTeacher(currentTeacher.getTeacherId());
+
+        for (ClassRoom classRoom : classes) {
+            String display = classRoom.getClassId() + " - " + classRoom.getClassName();
+            cbAssignedClasses.addItem(display);
+            classMap.put(display, classRoom.getClassId());
+        }
+
+        if (cbAssignedClasses.getItemCount() == 0) {
+            cbAssignedClasses.addItem("No class available");
+        }
     }
 
     private void styleLevelRadio(JRadioButton radioButton) {
@@ -230,11 +270,15 @@ public class CreateNewQuiz extends JFrame {
 
     private void createQuizAndOpenAddQuiz() {
         String quizName = txtQuizName.getText().trim();
-        String tags = txtTags.getText().trim();
         String duration = txtDuration.getText().trim();
-        String assignedClass = (String) cbAssignedClasses.getSelectedItem();
 
-        if (quizName.isEmpty() || tags.isEmpty() || duration.isEmpty() || assignedClass == null) {
+        String selectedQuizTagText = (String) cbQuizTags.getSelectedItem();
+        String selectedClassText = (String) cbAssignedClasses.getSelectedItem();
+
+        Integer selectedQuizTagId = quizTagMap.get(selectedQuizTagText);
+        String selectedClassId = classMap.get(selectedClassText);
+
+        if (quizName.isEmpty() || duration.isEmpty() || selectedQuizTagId == null || selectedClassId == null) {
             JOptionPane.showMessageDialog(
                     this,
                     "Please fill in all quiz information before continuing.",
@@ -274,29 +318,68 @@ public class CreateNewQuiz extends JFrame {
             return;
         }
 
-        String level;
+        int levelValue;
+        String levelText;
+
         if (rbHard.isSelected()) {
-            level = "Hard";
+            levelValue = 3;
+            levelText = "Hard";
         } else if (rbMedium.isSelected()) {
-            level = "Medium";
+            levelValue = 2;
+            levelText = "Medium";
         } else {
-            level = "Easy";
+            levelValue = 1;
+            levelText = "Easy";
         }
 
         String startDate = dpStartDate.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         String endDate = dpEndDate.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
-        new AddQuiz(
-                currentTeacher,
-                quizName,
-                tags,
-                level,
-                startDate,
-                endDate,
-                duration,
-                assignedClass
-        );
-        dispose();
+        try {
+            String createdQuizId = quizService.createQuizAndAssignToClass(
+                    currentTeacher,
+                    quizName,
+                    levelValue,
+                    selectedQuizTagId,
+                    selectedClassId
+            );
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Quiz created successfully with ID: " + createdQuizId,
+                    "Create Success",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+            new AddQuiz(
+                    currentTeacher,
+                    createdQuizId,
+                    quizName,
+                    selectedQuizTagText,
+                    levelText,
+                    startDate,
+                    endDate,
+                    duration,
+                    selectedClassText
+            );
+
+            dispose();
+
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    ex.getMessage(),
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE
+            );
+        } catch (IllegalStateException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    ex.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     public static void main(String[] args) {
