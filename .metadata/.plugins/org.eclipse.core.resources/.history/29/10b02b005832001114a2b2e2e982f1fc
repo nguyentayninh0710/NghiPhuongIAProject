@@ -1,0 +1,45 @@
+package QuizApplication.model;
+
+public class StudentQuizDashboardItem {
+    private String quizId;
+    private String quizTitle;
+    private String topic;
+    private int questionCount;
+    private int durationMinutes;
+    private String classId;
+    private String className;
+    private String status; // START, COMPLETED, OVERDUE
+    private String dueDateText;
+    private boolean canStart;
+    private boolean canReview;
+
+    public StudentQuizDashboardItem(String quizId, String quizTitle, String topic,
+                                    int questionCount, int durationMinutes,
+                                    String classId, String className,
+                                    String status, String dueDateText,
+                                    boolean canStart, boolean canReview) {
+        this.quizId = quizId;
+        this.quizTitle = quizTitle;
+        this.topic = topic;
+        this.questionCount = questionCount;
+        this.durationMinutes = durationMinutes;
+        this.classId = classId;
+        this.className = className;
+        this.status = status;
+        this.dueDateText = dueDateText;
+        this.canStart = canStart;
+        this.canReview = canReview;
+    }
+
+    public String getQuizId() { return quizId; }
+    public String getQuizTitle() { return quizTitle; }
+    public String getTopic() { return topic; }
+    public int getQuestionCount() { return questionCount; }
+    public int getDurationMinutes() { return durationMinutes; }
+    public String getClassId() { return classId; }
+    public String getClassName() { return className; }
+    public String getStatus() { return status; }
+    public String getDueDateText() { return dueDateText; }
+    public boolean isCanStart() { return canStart; }
+    public boolean isCanReview() { return canReview; }
+}

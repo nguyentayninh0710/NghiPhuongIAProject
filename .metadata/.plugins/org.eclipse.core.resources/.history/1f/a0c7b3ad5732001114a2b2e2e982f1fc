@@ -1,0 +1,194 @@
+package QuizApplication.ui;
+
+import QuizApplication.auth.SessionManager;
+import QuizApplication.model.Student;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+
+public class StudentDashboard extends JFrame {
+
+    private final Student currentStudent;
+
+    private JLabel lblWelcome;
+    private JLabel lblStudentIdValue;
+    private JLabel lblStudentNameValue;
+    private JLabel lblStudentEmailValue;
+
+    private JButton btnLogout;
+    private JButton btnBackHome;
+
+    public StudentDashboard(Student student) {
+        this.currentStudent = student;
+
+        initComponents();
+        loadStudentInfo();
+    }
+
+    private void initComponents() {
+        setTitle("Student Dashboard");
+        setSize(760, 540);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setResizable(false);
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(new Color(229, 239, 250));
+        setContentPane(mainPanel);
+
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setPreferredSize(new Dimension(760, 95));
+        headerPanel.setBackground(new Color(19, 55, 91));
+
+        JLabel titleLabel = new JLabel("Student Dashboard", SwingConstants.CENTER);
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 32));
+        titleLabel.setBorder(new EmptyBorder(20, 10, 15, 10));
+        headerPanel.add(titleLabel, BorderLayout.CENTER);
+
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
+
+        JPanel bodyPanel = new JPanel();
+        bodyPanel.setLayout(new BoxLayout(bodyPanel, BoxLayout.Y_AXIS));
+        bodyPanel.setBackground(new Color(229, 239, 250));
+        bodyPanel.setBorder(new EmptyBorder(30, 60, 30, 60));
+
+        lblWelcome = new JLabel("Welcome, Student");
+        lblWelcome.setFont(new Font("SansSerif", Font.PLAIN, 20));
+        lblWelcome.setForeground(new Color(45, 45, 45));
+        lblWelcome.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblWelcome.setBorder(new EmptyBorder(0, 0, 20, 0));
+        bodyPanel.add(lblWelcome);
+
+        JPanel infoPanel = buildStudentInfoPanel();
+        infoPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        bodyPanel.add(infoPanel);
+
+        bodyPanel.add(Box.createVerticalStrut(30));
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 0));
+        buttonPanel.setBackground(new Color(229, 239, 250));
+        buttonPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        btnLogout = new JButton("Log Out");
+        styleButton(btnLogout, new Color(40, 104, 176));
+
+        btnBackHome = new JButton("Back Home");
+        styleButton(btnBackHome, new Color(87, 134, 190));
+
+        buttonPanel.add(btnLogout);
+        buttonPanel.add(btnBackHome);
+
+        bodyPanel.add(buttonPanel);
+
+        mainPanel.add(bodyPanel, BorderLayout.CENTER);
+
+        registerEvents();
+    }
+
+    private JPanel buildStudentInfoPanel() {
+        JPanel infoPanel = new JPanel(new GridLayout(3, 2, 12, 10));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setMaximumSize(new Dimension(560, 120));
+        infoPanel.setPreferredSize(new Dimension(560, 120));
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 210, 220)),
+                new EmptyBorder(16, 16, 16, 16)
+        ));
+
+        JLabel lblStudentId = new JLabel("Student ID:");
+        JLabel lblStudentName = new JLabel("Student Name:");
+        JLabel lblStudentEmail = new JLabel("Student Email:");
+
+        styleInfoLabel(lblStudentId);
+        styleInfoLabel(lblStudentName);
+        styleInfoLabel(lblStudentEmail);
+
+        lblStudentIdValue = new JLabel("-");
+        lblStudentNameValue = new JLabel("-");
+        lblStudentEmailValue = new JLabel("-");
+
+        styleInfoValue(lblStudentIdValue);
+        styleInfoValue(lblStudentNameValue);
+        styleInfoValue(lblStudentEmailValue);
+
+        infoPanel.add(lblStudentId);
+        infoPanel.add(lblStudentIdValue);
+        infoPanel.add(lblStudentName);
+        infoPanel.add(lblStudentNameValue);
+        infoPanel.add(lblStudentEmail);
+        infoPanel.add(lblStudentEmailValue);
+
+        return infoPanel;
+    }
+
+    private void styleInfoLabel(JLabel label) {
+        label.setFont(new Font("SansSerif", Font.BOLD, 15));
+        label.setForeground(new Color(70, 70, 70));
+    }
+
+    private void styleInfoValue(JLabel label) {
+        label.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        label.setForeground(new Color(30, 30, 30));
+    }
+
+    private void styleButton(JButton button, Color bgColor) {
+        button.setPreferredSize(new Dimension(170, 42));
+        button.setFocusPainted(false);
+        button.setForeground(Color.WHITE);
+        button.setBackground(bgColor);
+        button.setFont(new Font("SansSerif", Font.BOLD, 15));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
+    }
+
+    private void loadStudentInfo() {
+        String studentId = "N/A";
+        String studentName = "Student";
+        String studentEmail = "N/A";
+
+        if (currentStudent != null) {
+            if (currentStudent.getStudentId() != null && !currentStudent.getStudentId().trim().isEmpty()) {
+                studentId = currentStudent.getStudentId();
+            }
+            if (currentStudent.getStudentName() != null && !currentStudent.getStudentName().trim().isEmpty()) {
+                studentName = currentStudent.getStudentName();
+            }
+            if (currentStudent.getStudentEmail() != null && !currentStudent.getStudentEmail().trim().isEmpty()) {
+                studentEmail = currentStudent.getStudentEmail();
+            }
+        }
+
+        lblWelcome.setText("Welcome, " + studentName);
+        lblStudentIdValue.setText(studentId);
+        lblStudentNameValue.setText(studentName);
+        lblStudentEmailValue.setText(studentEmail);
+    }
+
+    private void registerEvents() {
+        btnLogout.addActionListener(e -> logout());
+        btnBackHome.addActionListener(e -> backHome());
+    }
+
+    private void logout() {
+        SessionManager.clearSession();
+        SwingUtilities.invokeLater(() -> new HomePage().setVisible(true));
+        dispose();
+    }
+
+    private void backHome() {
+        SwingUtilities.invokeLater(() -> new HomePage().setVisible(true));
+        dispose();
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            Student demoStudent = new Student("S001", "Nguyen Van A", "studenta@gmail.com", null);
+            new StudentDashboard(demoStudent).setVisible(true);
+        });
+    }
+}

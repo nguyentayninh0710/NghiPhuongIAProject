@@ -1,0 +1,428 @@
+package QuizApplication.dao;
+
+import QuizApplication.config.DBConnection;
+import QuizApplication.model.StudentQuizQuestionItem;
+import QuizApplication.model.StudentQuizResultSummary;
+import QuizApplication.model.StudentQuizReviewItem;
+
+import java.sql.*;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
+
+public class StudentQuizDAO {
+
+    public boolean hasCompletedAttempt(String studentId, String quizId, String classId) {
+        String sql = "SELECT 1 " +
+                     "FROM student_quiz_attempt " +
+                     "WHERE StudentId = ? AND QuizId = ? AND ClassId = ? " +
+                     "AND Status IN ('COMPLETED', 'SUBMITTED') " +
+                     "LIMIT 1";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, studentId);
+            ps.setString(2, quizId);
+            ps.setString(3, classId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public Integer getInProgressAttemptId(String studentId, String quizId, String classId) {
+        String sql = "SELECT AttemptId " +
+                     "FROM student_quiz_attempt " +
+                     "WHERE StudentId = ? AND QuizId = ? AND ClassId = ? " +
+                     "AND Status = 'IN_PROGRESS' " +
+                     "ORDER BY AttemptId DESC " +
+                     "LIMIT 1";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, studentId);
+            ps.setString(2, quizId);
+            ps.setString(3, classId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("AttemptId");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public int createAttempt(String studentId, String quizId, String classId, int durationMinutes) {
+        String sql = "INSERT INTO student_quiz_attempt " +
+                     "(StudentId, QuizId, ClassId, DateStart, TimeStart, DurationMinutes, Score, TotalMarks, EarnedMarks, Status) " +
+                     "VALUES (?, ?, ?, CURDATE(), CURTIME(), ?, 0, 0, 0, 'IN_PROGRESS')";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            ps.setString(1, studentId);
+            ps.setString(2, quizId);
+            ps.setString(3, classId);
+            ps.setInt(4, durationMinutes);
+
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                throw new SQLException("Creating attempt failed, no row affected.");
+            }
+
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+
+            throw new SQLException("Creating attempt failed, no generated key returned.");
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot create student quiz attempt: " + e.getMessage(), e);
+        }
+    }
+
+    public List<StudentQuizQuestionItem> getQuestionsForAttempt(int attemptId) {
+        List<StudentQuizQuestionItem> items = new ArrayList<>();
+
+        String sql =
+                "SELECT q.QuestionId, q.QuestionContent, q.OptionA, q.OptionB, q.OptionC, q.OptionD, " +
+                "       q.CorrectOption, q.CorrectExplanation, q.QuestionMarks, sa.SelectedOption " +
+                "FROM student_quiz_attempt a " +
+                "JOIN question q ON a.QuizId = q.QuizId " +
+                "LEFT JOIN student_answer sa ON sa.AttemptId = a.AttemptId AND sa.QuestionId = q.QuestionId " +
+                "WHERE a.AttemptId = ? " +
+                "ORDER BY q.QuestionId";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, attemptId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    items.add(new StudentQuizQuestionItem(
+                            rs.getString("QuestionId"),
+                            rs.getString("QuestionContent"),
+                            rs.getString("OptionA"),
+                            rs.getString("OptionB"),
+                            rs.getString("OptionC"),
+                            rs.getString("OptionD"),
+                            rs.getString("CorrectOption"),
+                            rs.getString("CorrectExplanation"),
+                            rs.getInt("QuestionMarks"),
+                            rs.getString("SelectedOption")
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot load quiz questions: " + e.getMessage(), e);
+        }
+
+        return items;
+    }
+
+    public void saveOrUpdateAnswer(int attemptId, String questionId, String selectedOption) {
+        String sql =
+                "INSERT INTO student_answer (AttemptId, QuestionId, SelectedOption, IsCorrect, MarksAwarded) " +
+                "VALUES (?, ?, ?, FALSE, 0) " +
+                "ON DUPLICATE KEY UPDATE SelectedOption = VALUES(SelectedOption)";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, attemptId);
+            ps.setString(2, questionId);
+            ps.setString(3, selectedOption);
+
+            ps.executeUpdate();
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot save answer: " + e.getMessage(), e);
+        }
+    }
+
+    public boolean isAttemptStillInProgress(int attemptId) {
+        String sql = "SELECT Status FROM student_quiz_attempt WHERE AttemptId = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, attemptId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return "IN_PROGRESS".equalsIgnoreCase(rs.getString("Status"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public StudentQuizResultSummary submitAndGradeAttempt(int attemptId, boolean forceOverdue) {
+        Connection conn = null;
+        try {
+            conn = DBConnection.getConnection();
+            conn.setAutoCommit(false);
+
+            String loadSql =
+                    "SELECT q.QuestionId, q.CorrectOption, q.QuestionMarks, sa.SelectedOption " +
+                    "FROM student_quiz_attempt a " +
+                    "JOIN question q ON a.QuizId = q.QuizId " +
+                    "LEFT JOIN student_answer sa ON sa.AttemptId = a.AttemptId AND sa.QuestionId = q.QuestionId " +
+                    "WHERE a.AttemptId = ? " +
+                    "ORDER BY q.QuestionId";
+
+            int totalMarks = 0;
+            int earnedMarks = 0;
+            int correctAnswers = 0;
+            int totalQuestions = 0;
+
+            List<AnswerGradeRow> gradeRows = new ArrayList<>();
+
+            try (PreparedStatement ps = conn.prepareStatement(loadSql)) {
+                ps.setInt(1, attemptId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        totalQuestions++;
+
+                        String questionId = rs.getString("QuestionId");
+                        String correctOption = rs.getString("CorrectOption");
+                        String selectedOption = rs.getString("SelectedOption");
+                        int marks = rs.getInt("QuestionMarks");
+
+                        totalMarks += marks;
+
+                        boolean correct = selectedOption != null &&
+                                          selectedOption.equalsIgnoreCase(correctOption);
+                        int marksAwarded = correct ? marks : 0;
+
+                        if (correct) {
+                            correctAnswers++;
+                            earnedMarks += marks;
+                        }
+
+                        gradeRows.add(new AnswerGradeRow(questionId, correct, marksAwarded, selectedOption));
+                    }
+                }
+            }
+
+            String upsertBlankSql =
+                    "INSERT INTO student_answer (AttemptId, QuestionId, SelectedOption, IsCorrect, MarksAwarded) " +
+                    "VALUES (?, ?, NULL, ?, ?) " +
+                    "ON DUPLICATE KEY UPDATE IsCorrect = VALUES(IsCorrect), MarksAwarded = VALUES(MarksAwarded)";
+
+            try (PreparedStatement ps = conn.prepareStatement(upsertBlankSql)) {
+                for (AnswerGradeRow row : gradeRows) {
+                    ps.setInt(1, attemptId);
+                    ps.setString(2, row.questionId);
+                    ps.setBoolean(3, row.correct);
+                    ps.setInt(4, row.marksAwarded);
+                    ps.addBatch();
+                }
+                ps.executeBatch();
+            }
+
+            String status = forceOverdue ? "OVERDUE" : "COMPLETED";
+            double score = totalMarks == 0 ? 0 : ((double) earnedMarks / totalMarks) * 100.0;
+
+            String updateAttemptSql =
+                    "UPDATE student_quiz_attempt " +
+                    "SET DateEnd = CURDATE(), " +
+                    "    TimeEnd = CURTIME(), " +
+                    "    Score = ?, " +
+                    "    TotalMarks = ?, " +
+                    "    EarnedMarks = ?, " +
+                    "    Status = ? " +
+                    "WHERE AttemptId = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(updateAttemptSql)) {
+                ps.setDouble(1, score);
+                ps.setInt(2, totalMarks);
+                ps.setInt(3, earnedMarks);
+                ps.setString(4, status);
+                ps.setInt(5, attemptId);
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return getAttemptSummary(attemptId);
+
+        } catch (Exception e) {
+            try {
+                if (conn != null) conn.rollback();
+            } catch (Exception ignored) {
+            }
+            throw new RuntimeException("Cannot submit and grade attempt: " + e.getMessage(), e);
+        } finally {
+            try {
+                if (conn != null) conn.setAutoCommit(true);
+            } catch (Exception ignored) {
+            }
+            try {
+                if (conn != null) conn.close();
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    public StudentQuizResultSummary getAttemptSummary(int attemptId) {
+        String sql =
+                "SELECT a.AttemptId, a.QuizId, q.QuizTitle, a.TotalMarks, a.EarnedMarks, a.Score, " +
+                "       COUNT(sa.QuestionId) AS TotalQuestions, " +
+                "       SUM(CASE WHEN sa.IsCorrect = TRUE THEN 1 ELSE 0 END) AS CorrectAnswers, " +
+                "       a.DateStart, a.TimeStart, a.DateEnd, a.TimeEnd " +
+                "FROM student_quiz_attempt a " +
+                "JOIN quiz q ON a.QuizId = q.QuizId " +
+                "LEFT JOIN student_answer sa ON sa.AttemptId = a.AttemptId " +
+                "WHERE a.AttemptId = ? " +
+                "GROUP BY a.AttemptId, a.QuizId, q.QuizTitle, a.TotalMarks, a.EarnedMarks, a.Score, " +
+                "         a.DateStart, a.TimeStart, a.DateEnd, a.TimeEnd";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, attemptId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String finishedInText = calculateFinishedInText(
+                            rs.getDate("DateStart"),
+                            rs.getTime("TimeStart"),
+                            rs.getDate("DateEnd"),
+                            rs.getTime("TimeEnd")
+                    );
+
+                    return new StudentQuizResultSummary(
+                            rs.getInt("AttemptId"),
+                            rs.getString("QuizId"),
+                            rs.getString("QuizTitle"),
+                            rs.getInt("TotalQuestions"),
+                            rs.getInt("CorrectAnswers"),
+                            rs.getInt("TotalMarks"),
+                            rs.getInt("EarnedMarks"),
+                            rs.getInt("EarnedMarks") + "/" + rs.getInt("TotalMarks"),
+                            finishedInText
+                    );
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot load attempt summary: " + e.getMessage(), e);
+        }
+
+        throw new RuntimeException("Attempt summary not found.");
+    }
+
+    public List<StudentQuizReviewItem> getAttemptReviewItems(int attemptId) {
+        List<StudentQuizReviewItem> items = new ArrayList<>();
+
+        String sql =
+                "SELECT q.QuestionId, q.QuestionContent, q.CorrectOption, q.CorrectExplanation, " +
+                "       sa.SelectedOption, sa.IsCorrect " +
+                "FROM student_quiz_attempt a " +
+                "JOIN question q ON a.QuizId = q.QuizId " +
+                "LEFT JOIN student_answer sa ON sa.AttemptId = a.AttemptId AND sa.QuestionId = q.QuestionId " +
+                "WHERE a.AttemptId = ? " +
+                "ORDER BY q.QuestionId";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, attemptId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                int number = 1;
+                while (rs.next()) {
+                    items.add(new StudentQuizReviewItem(
+                            number++,
+                            rs.getString("QuestionId"),
+                            rs.getString("QuestionContent"),
+                            rs.getString("SelectedOption"),
+                            rs.getString("CorrectOption"),
+                            rs.getString("CorrectExplanation"),
+                            rs.getBoolean("IsCorrect")
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot load review items: " + e.getMessage(), e);
+        }
+
+        return items;
+    }
+
+    public int getAttemptDurationMinutes(int attemptId) {
+        String sql = "SELECT DurationMinutes FROM student_quiz_attempt WHERE AttemptId = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, attemptId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("DurationMinutes");
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot load attempt duration: " + e.getMessage(), e);
+        }
+
+        return 0;
+    }
+
+    private String calculateFinishedInText(Date dateStart, Time timeStart, Date dateEnd, Time timeEnd) {
+        if (dateStart == null || timeStart == null || dateEnd == null || timeEnd == null) {
+            return "00:00";
+        }
+
+        LocalDateTime start = LocalDateTime.of(
+                dateStart.toLocalDate(),
+                timeStart.toLocalTime()
+        );
+        LocalDateTime end = LocalDateTime.of(
+                dateEnd.toLocalDate(),
+                timeEnd.toLocalTime()
+        );
+
+        long seconds = Duration.between(start, end).getSeconds();
+        if (seconds < 0) {
+            seconds = 0;
+        }
+
+        long minutes = seconds / 60;
+        long remain = seconds % 60;
+
+        return String.format("%02d:%02d", minutes, remain);
+    }
+
+    private static class AnswerGradeRow {
+        private final String questionId;
+        private final boolean correct;
+        private final int marksAwarded;
+        private final String selectedOption;
+
+        private AnswerGradeRow(String questionId, boolean correct, int marksAwarded, String selectedOption) {
+            this.questionId = questionId;
+            this.correct = correct;
+            this.marksAwarded = marksAwarded;
+            this.selectedOption = selectedOption;
+        }
+    }
+}

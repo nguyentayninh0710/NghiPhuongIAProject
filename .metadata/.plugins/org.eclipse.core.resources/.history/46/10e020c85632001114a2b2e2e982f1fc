@@ -1,0 +1,40 @@
+package QuizApplication.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+import QuizApplication.config.DBConnection;
+import QuizApplication.model.Student;
+
+public class StudentDAO {
+
+    public Student findByEmailAndPassword(String email, String password) {
+        String sql = "SELECT StudentId, StudentName, StudentEmail "
+                   + "FROM student "
+                   + "WHERE StudentEmail = ? AND StudentPassword = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+            ps.setString(2, password);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Student(
+                            rs.getString("StudentId"),
+                            rs.getString("StudentName"),
+                            rs.getString("StudentEmail"),
+                            null
+                    );
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+}

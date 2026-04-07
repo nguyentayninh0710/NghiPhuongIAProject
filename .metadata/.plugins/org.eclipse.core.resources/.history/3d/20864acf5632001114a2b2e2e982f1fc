@@ -1,0 +1,53 @@
+package QuizApplication.service;
+
+import java.util.regex.Pattern;
+
+import QuizApplication.dao.StudentDAO;
+import QuizApplication.model.Student;
+import QuizApplication.model.StudentLoginResult;
+
+public class StudentService {
+
+    private final StudentDAO studentDAO;
+
+    public StudentService() {
+        this.studentDAO = new StudentDAO();
+    }
+
+    public StudentLoginResult loginStudent(String email, String password) {
+        String normalizedEmail = normalizeEmail(email);
+        String normalizedPassword = normalizePassword(password);
+
+        if (normalizedEmail.isEmpty()) {
+            return new StudentLoginResult(false, "Email must not be empty", null);
+        }
+
+        if (!isValidEmail(normalizedEmail)) {
+            return new StudentLoginResult(false, "Email is invalid", null);
+        }
+
+        if (normalizedPassword.isEmpty()) {
+            return new StudentLoginResult(false, "Password must not be empty", null);
+        }
+
+        Student student = studentDAO.findByEmailAndPassword(normalizedEmail, normalizedPassword);
+
+        if (student == null) {
+            return new StudentLoginResult(false, "Incorrect email or password!", null);
+        }
+
+        return new StudentLoginResult(true, "Login successfully", student);
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim();
+    }
+
+    private String normalizePassword(String password) {
+        return password == null ? "" : password.trim();
+    }
+
+    private boolean isValidEmail(String email) {
+        return Pattern.matches("^[A-Za-z0-9+_.-]+@(.+)$", email);
+    }
+}

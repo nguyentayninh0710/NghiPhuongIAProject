@@ -88,7 +88,7 @@ public class AddQuiz extends JFrame {
         headerPanel.setPreferredSize(new Dimension(980, 110));
         headerPanel.setBackground(new Color(43, 31, 115));
 
-        JLabel lblTitle = new JLabel("[" + safeText(quizName) + "]", SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel(safeText(quizName) + " ", SwingConstants.CENTER);
         lblTitle.setForeground(Color.WHITE);
         lblTitle.setFont(new Font("SansSerif", Font.BOLD, 34));
         lblTitle.setBorder(new EmptyBorder(18, 10, 18, 10));

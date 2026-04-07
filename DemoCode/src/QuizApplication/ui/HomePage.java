@@ -19,7 +19,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 public class HomePage extends JFrame {
@@ -27,9 +26,6 @@ public class HomePage extends JFrame {
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
 
-    /**
-     * Launch the application.
-     */
     public static void main(String[] args) {
         EventQueue.invokeLater(() -> {
             try {
@@ -41,9 +37,6 @@ public class HomePage extends JFrame {
         });
     }
 
-    /**
-     * Open Teacher Login Page
-     */
     private void openTeacherLoginPage() {
         EventQueue.invokeLater(() -> {
             TeacherLoginPage teacherLoginPage = new TeacherLoginPage();
@@ -52,9 +45,14 @@ public class HomePage extends JFrame {
         dispose();
     }
 
-    /**
-     * Safe image loader
-     */
+    private void openStudentLoginPage() {
+        EventQueue.invokeLater(() -> {
+            StudentLoginPage studentLoginPage = new StudentLoginPage();
+            studentLoginPage.setVisible(true);
+        });
+        dispose();
+    }
+
     private ImageIcon loadScaledIcon(String path, int width, int height) {
         URL imageUrl = getClass().getResource(path);
 
@@ -68,9 +66,6 @@ public class HomePage extends JFrame {
         return new ImageIcon(scaledImage);
     }
 
-    /**
-     * Create rounded button
-     */
     private JButton createRoundedButton(String text, ImageIcon icon, Color normalColor, Color hoverColor) {
         JButton button = new JButton(text, icon) {
             private static final long serialVersionUID = 1L;
@@ -89,7 +84,6 @@ public class HomePage extends JFrame {
 
             @Override
             protected void paintBorder(Graphics g) {
-                // No border
             }
         };
 
@@ -118,9 +112,6 @@ public class HomePage extends JFrame {
         return button;
     }
 
-    /**
-     * Create the frame.
-     */
     public HomePage() {
         setTitle("Quiz Education System");
         setSize(450, 350);
@@ -136,7 +127,6 @@ public class HomePage extends JFrame {
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setPreferredSize(new Dimension(450, 60));
-
         contentPane.add(titleLabel, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel(new GridLayout(1, 2, 30, 0));
@@ -152,19 +142,15 @@ public class HomePage extends JFrame {
                 new Color(255, 140, 80),
                 new Color(255, 120, 60)
         );
-
         teacherBtn.addActionListener(e -> openTeacherLoginPage());
 
         JButton studentBtn = createRoundedButton(
                 "Student mode",
                 studentIcon,
-                new Color(50, 150, 140),
-                new Color(50, 150, 120)
+                new Color(74, 140, 206),
+                new Color(58, 124, 190)
         );
-
-        studentBtn.addActionListener(e ->
-                JOptionPane.showMessageDialog(this, "Student mode selected")
-        );
+        studentBtn.addActionListener(e -> openStudentLoginPage());
 
         centerPanel.add(teacherBtn);
         centerPanel.add(studentBtn);

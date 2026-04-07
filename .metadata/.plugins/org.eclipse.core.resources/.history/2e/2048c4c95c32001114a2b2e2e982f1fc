@@ -1,0 +1,146 @@
+package QuizApplication.dao;
+
+import QuizApplication.config.DBConnection;
+import QuizApplication.model.ClassRoom;
+import QuizApplication.model.Student;
+import QuizApplication.model.StudentQuizDashboardItem;
+
+import java.sql.*;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+public class StudentDAO {
+
+    public Student findByEmailAndPassword(String email, String password) {
+        String sql = "SELECT StudentId, StudentName, StudentEmail, StudentPassword " +
+                     "FROM student WHERE StudentEmail = ? AND StudentPassword = ?";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, email);
+            ps.setString(2, password);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Student(
+                            rs.getString("StudentId"),
+                            rs.getString("StudentName"),
+                            rs.getString("StudentEmail"),
+                            rs.getString("StudentPassword")
+                    );
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public List<ClassRoom> getClassesByStudent(String studentId) {
+        List<ClassRoom> classes = new ArrayList<>();
+
+        String sql = "SELECT c.ClassId, c.ClassName, c.TeacherId " +
+                     "FROM enroll e " +
+                     "JOIN class c ON e.ClassId = c.ClassId " +
+                     "WHERE e.StudentId = ? " +
+                     "ORDER BY c.ClassId";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, studentId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    classes.add(new ClassRoom(
+                            rs.getString("ClassId"),
+                            rs.getString("ClassName"),
+                            rs.getString("TeacherId")
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return classes;
+    }
+
+    public List<StudentQuizDashboardItem> getAssignedQuizzesByStudentAndClass(
+            String studentId, String classId, String keyword) {
+
+        List<StudentQuizDashboardItem> items = new ArrayList<>();
+
+        String sql =
+            "SELECT q.QuizId, q.QuizTitle, qt.QuizTagDescription, " +
+            "       COUNT(ques.QuestionId) AS QuestionCount, " +
+            "       a.DurationMinutes, a.DueDate, c.ClassId, c.ClassName, " +
+            "       MAX(CASE WHEN at.Status IN ('COMPLETED', 'SUBMITTED') THEN 1 ELSE 0 END) AS IsCompleted " +
+            "FROM assignment a " +
+            "JOIN quiz q ON a.QuizId = q.QuizId " +
+            "JOIN class c ON a.ClassId = c.ClassId " +
+            "LEFT JOIN quiztag qt ON q.QuizTagId = qt.QuizTagId " +
+            "LEFT JOIN question ques ON q.QuizId = ques.QuizId " +
+            "LEFT JOIN attempts at ON at.QuizId = q.QuizId AND at.StudentId = ? " +
+            "WHERE a.ClassId = ? " +
+            "  AND (? IS NULL OR ? = '' OR q.QuizTitle LIKE CONCAT('%', ?, '%') OR qt.QuizTagDescription LIKE CONCAT('%', ?, '%')) " +
+            "GROUP BY q.QuizId, q.QuizTitle, qt.QuizTagDescription, a.DurationMinutes, a.DueDate, c.ClassId, c.ClassName " +
+            "ORDER BY a.DueDate ASC, q.QuizTitle ASC";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, studentId);
+            ps.setString(2, classId);
+            ps.setString(3, keyword);
+            ps.setString(4, keyword);
+            ps.setString(5, keyword);
+            ps.setString(6, keyword);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Date dueDateSql = rs.getDate("DueDate");
+                    LocalDate dueDate = dueDateSql == null ? null : dueDateSql.toLocalDate();
+
+                    boolean completed = rs.getInt("IsCompleted") == 1;
+                    boolean overdue = !completed && dueDate != null && LocalDate.now().isAfter(dueDate);
+
+                    String status;
+                    boolean canStart = false;
+                    boolean canReview = false;
+
+                    if (completed) {
+                        status = "COMPLETED";
+                        canReview = true;
+                    } else if (overdue) {
+                        status = "OVERDUE";
+                    } else {
+                        status = "START";
+                        canStart = true;
+                    }
+
+                    items.add(new StudentQuizDashboardItem(
+                            rs.getString("QuizId"),
+                            rs.getString("QuizTitle"),
+                            rs.getString("QuizTagDescription"),
+                            rs.getInt("QuestionCount"),
+                            rs.getInt("DurationMinutes"),
+                            rs.getString("ClassId"),
+                            rs.getString("ClassName"),
+                            status,
+                            dueDate == null ? "-" : dueDate.toString(),
+                            canStart,
+                            canReview
+                    ));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return items;
+    }
+}

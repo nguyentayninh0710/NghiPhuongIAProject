@@ -7,8 +7,8 @@ public class DBConnection {
 	private static final String PORT = "3306";
 	private static final String DATABASE = "quiz_application";
 	private static final String USERNAME = "root";
-//	private static final String PASSWORD = "IBDP@ComputerScience7";
-	private static final String PASSWORD = "thangbomtn0710";
+	private static final String PASSWORD = "IBDP@ComputerScience7";
+//	private static final String PASSWORD = "thangbomtn0710";
 	
     private static final String URL =
             "jdbc:mysql://" + HOST + ":" + PORT + "/" + DATABASE

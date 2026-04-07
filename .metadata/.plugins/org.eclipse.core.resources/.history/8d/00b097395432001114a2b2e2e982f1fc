@@ -1,0 +1,5 @@
+package QuizApplication.service;
+
+public class StudentService {
+
+}
