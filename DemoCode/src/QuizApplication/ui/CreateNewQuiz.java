@@ -15,7 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
+import javax.swing.plaf.basic.BasicButtonUI;
 public class CreateNewQuiz extends JFrame {
 
     private final Teacher currentTeacher;
@@ -252,16 +252,23 @@ public class CreateNewQuiz extends JFrame {
     }
 
     private void styleActionButton(JButton button, Color bgColor) {
+        button.setUI(new BasicButtonUI());
         button.setFont(new Font("SansSerif", Font.BOLD, 18));
         button.setForeground(Color.WHITE);
         button.setBackground(bgColor);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
     }
 
     private void registerEvents() {
         btnBack.addActionListener(e -> {
-            new TeacherDashboard(currentTeacher);
+            SwingUtilities.invokeLater(() -> {
+                new TeacherDashboard(currentTeacher).setVisible(true);
+            });
             dispose();
         });
 

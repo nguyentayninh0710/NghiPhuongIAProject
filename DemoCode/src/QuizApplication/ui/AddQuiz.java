@@ -1,9 +1,12 @@
 package QuizApplication.ui;
 
+import QuizApplication.model.Question;
 import QuizApplication.model.Teacher;
+import QuizApplication.service.QuestionService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicButtonUI;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,6 +15,7 @@ public class AddQuiz extends JFrame {
 
     private final Teacher currentTeacher;
 
+    private final String quizId;
     private final String quizName;
     private final String tags;
     private final String level;
@@ -20,7 +24,10 @@ public class AddQuiz extends JFrame {
     private final String duration;
     private final String assignedClass;
 
+    private final QuestionService questionService;
+
     private JLabel lblQuestionNumber;
+    private JLabel lblSavedCountValue;
 
     private JTextArea txtQuestionContent;
     private JTextField txtOptionA;
@@ -36,12 +43,10 @@ public class AddQuiz extends JFrame {
 
     private JButton btnAddQuestion;
     private JButton btnDeleteQuestion;
-    private JButton btnBack;
+    private JButton btnFinish;
 
     private int questionCount = 1;
-    private final List<String> addedQuestions = new ArrayList<>();
-
-    private final String quizId;
+    private final List<String> addedQuestionIds = new ArrayList<>();
 
     public AddQuiz(Teacher teacher,
                    String quizId,
@@ -61,14 +66,16 @@ public class AddQuiz extends JFrame {
         this.endDate = endDate;
         this.duration = duration;
         this.assignedClass = assignedClass;
+        this.questionService = new QuestionService();
 
         initComponents();
+        loadExistingQuestions();
         setVisible(true);
     }
 
     private void initComponents() {
         setTitle("Add Quiz Questions");
-        setSize(920, 620);
+        setSize(980, 860);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
@@ -77,12 +84,11 @@ public class AddQuiz extends JFrame {
         mainPanel.setBackground(new Color(220, 223, 237));
         setContentPane(mainPanel);
 
-        // ===== HEADER =====
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setPreferredSize(new Dimension(920, 105));
+        headerPanel.setPreferredSize(new Dimension(980, 110));
         headerPanel.setBackground(new Color(43, 31, 115));
 
-        JLabel lblTitle = new JLabel("[" + quizName + "]", SwingConstants.CENTER);
+        JLabel lblTitle = new JLabel("[" + safeText(quizName) + "]", SwingConstants.CENTER);
         lblTitle.setForeground(Color.WHITE);
         lblTitle.setFont(new Font("SansSerif", Font.BOLD, 34));
         lblTitle.setBorder(new EmptyBorder(18, 10, 18, 10));
@@ -90,23 +96,37 @@ public class AddQuiz extends JFrame {
 
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // ===== BODY =====
         JPanel bodyPanel = new JPanel();
         bodyPanel.setBackground(new Color(201, 207, 231));
         bodyPanel.setLayout(null);
         mainPanel.add(bodyPanel, BorderLayout.CENTER);
 
+        JPanel infoPanel = buildQuizInfoPanel();
+        infoPanel.setBounds(55, 18, 860, 115);
+        bodyPanel.add(infoPanel);
+
         lblQuestionNumber = new JLabel("Question " + questionCount);
-        lblQuestionNumber.setFont(new Font("SansSerif", Font.PLAIN, 18));
+        lblQuestionNumber.setFont(new Font("SansSerif", Font.BOLD, 20));
         lblQuestionNumber.setForeground(new Color(34, 66, 110));
-        lblQuestionNumber.setBounds(80, 18, 160, 28);
+        lblQuestionNumber.setBounds(70, 152, 180, 28);
         bodyPanel.add(lblQuestionNumber);
 
-        // ===== QUESTION CARD =====
+        JLabel lblSavedCount = new JLabel("Saved Questions:");
+        lblSavedCount.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        lblSavedCount.setForeground(new Color(44, 74, 112));
+        lblSavedCount.setBounds(720, 152, 130, 28);
+        bodyPanel.add(lblSavedCount);
+
+        lblSavedCountValue = new JLabel("0");
+        lblSavedCountValue.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblSavedCountValue.setForeground(new Color(44, 74, 112));
+        lblSavedCountValue.setBounds(855, 152, 50, 28);
+        bodyPanel.add(lblSavedCountValue);
+
         JPanel questionCard = new JPanel();
         questionCard.setLayout(null);
         questionCard.setBackground(new Color(154, 160, 228));
-        questionCard.setBounds(140, 50, 610, 250);
+        questionCard.setBounds(145, 190, 680, 315);
         bodyPanel.add(questionCard);
 
         txtQuestionContent = new JTextArea();
@@ -116,7 +136,7 @@ public class AddQuiz extends JFrame {
         txtQuestionContent.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JScrollPane spQuestionContent = new JScrollPane(txtQuestionContent);
-        spQuestionContent.setBounds(18, 14, 574, 66);
+        spQuestionContent.setBounds(20, 18, 640, 82);
         questionCard.add(spQuestionContent);
 
         txtOptionA = new JTextField();
@@ -129,10 +149,10 @@ public class AddQuiz extends JFrame {
         styleOptionField(txtOptionC);
         styleOptionField(txtOptionD);
 
-        txtOptionA.setBounds(18, 92, 240, 28);
-        txtOptionB.setBounds(312, 92, 240, 28);
-        txtOptionC.setBounds(18, 132, 240, 28);
-        txtOptionD.setBounds(312, 132, 240, 28);
+        txtOptionA.setBounds(20, 118, 260, 32);
+        txtOptionB.setBounds(360, 118, 260, 32);
+        txtOptionC.setBounds(20, 165, 260, 32);
+        txtOptionD.setBounds(360, 165, 260, 32);
 
         questionCard.add(txtOptionA);
         questionCard.add(txtOptionB);
@@ -149,45 +169,88 @@ public class AddQuiz extends JFrame {
         styleAnswerCheckBox(cbC);
         styleAnswerCheckBox(cbD);
 
-        cbA.setBounds(264, 92, 24, 28);
-        cbB.setBounds(558, 92, 24, 28);
-        cbC.setBounds(264, 132, 24, 28);
-        cbD.setBounds(558, 132, 24, 28);
+        cbA.setBounds(290, 118, 24, 32);
+        cbB.setBounds(630, 118, 24, 32);
+        cbC.setBounds(290, 165, 24, 32);
+        cbD.setBounds(630, 165, 24, 32);
 
         questionCard.add(cbA);
         questionCard.add(cbB);
         questionCard.add(cbC);
         questionCard.add(cbD);
 
-        JLabel lblNote = new JLabel("Note: A check indicates the correct answer");
+        JLabel lblNote = new JLabel("Note: Tick exactly one checkbox to mark the correct answer.");
         lblNote.setFont(new Font("SansSerif", Font.ITALIC, 13));
         lblNote.setForeground(new Color(55, 55, 90));
-        lblNote.setBounds(18, 170, 310, 20);
+        lblNote.setBounds(20, 210, 360, 20);
         questionCard.add(lblNote);
+
+        JLabel lblExplanation = new JLabel("Correct Explanation");
+        lblExplanation.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        lblExplanation.setForeground(new Color(34, 66, 110));
+        lblExplanation.setBounds(20, 236, 150, 22);
+        questionCard.add(lblExplanation);
 
         txtExplanation = new JTextField();
         txtExplanation.setFont(new Font("SansSerif", Font.PLAIN, 14));
         txtExplanation.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
-        txtExplanation.setBounds(18, 200, 574, 34);
+        txtExplanation.setBounds(20, 262, 640, 34);
         questionCard.add(txtExplanation);
 
-        // ===== BUTTONS =====
-        btnAddQuestion = new JButton("Add new question");
+        btnAddQuestion = new JButton("Add New Question");
         styleButton(btnAddQuestion, new Color(37, 19, 201), 18);
-        btnAddQuestion.setBounds(285, 325, 300, 36);
+        btnAddQuestion.setBounds(325, 535, 330, 42);
         bodyPanel.add(btnAddQuestion);
 
-        btnDeleteQuestion = new JButton("Delete Question");
+        btnDeleteQuestion = new JButton("Delete Last Question");
         styleButton(btnDeleteQuestion, new Color(171, 85, 47), 14);
-        btnDeleteQuestion.setBounds(110, 430, 140, 36);
+        btnDeleteQuestion.setBounds(110, 620, 180, 40);
         bodyPanel.add(btnDeleteQuestion);
 
-        btnBack = new JButton("Back");
-        styleButton(btnBack, new Color(120, 120, 120), 14);
-        btnBack.setBounds(670, 430, 120, 36);
-        bodyPanel.add(btnBack);
+        btnFinish = new JButton("Finish");
+        styleButton(btnFinish, new Color(43, 31, 115), 16);
+        btnFinish.setBounds(690, 620, 140, 40);
+        bodyPanel.add(btnFinish);
 
         registerEvents();
+        updateActionButtonsState();
+    }
+
+    private JPanel buildQuizInfoPanel() {
+        JPanel infoPanel = new JPanel(new GridLayout(4, 2, 12, 8));
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(210, 210, 210)),
+                new EmptyBorder(12, 14, 12, 14)
+        ));
+
+        infoPanel.add(createInfoLabel("Quiz ID:"));
+        infoPanel.add(createInfoValue(safeText(quizId)));
+
+        infoPanel.add(createInfoLabel("Tag / Level:"));
+        infoPanel.add(createInfoValue(safeText(tags) + " / " + safeText(level)));
+
+        infoPanel.add(createInfoLabel("Date Range:"));
+        infoPanel.add(createInfoValue(safeText(startDate) + "  →  " + safeText(endDate)));
+
+        infoPanel.add(createInfoLabel("Duration / Class:"));
+        infoPanel.add(createInfoValue(safeText(duration) + " mins / " + safeText(assignedClass)));
+
+        return infoPanel;
+    }
+
+    private JLabel createInfoLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("SansSerif", Font.BOLD, 14));
+        label.setForeground(new Color(70, 70, 70));
+        return label;
+    }
+
+    private JLabel createInfoValue(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("SansSerif", Font.PLAIN, 14));
+        label.setForeground(new Color(35, 35, 35));
+        return label;
     }
 
     private void styleOptionField(JTextField field) {
@@ -204,12 +267,16 @@ public class AddQuiz extends JFrame {
     }
 
     private void styleButton(JButton button, Color bgColor, int fontSize) {
+        button.setUI(new BasicButtonUI());
         button.setFont(new Font("SansSerif", Font.BOLD, fontSize));
         button.setForeground(Color.WHITE);
         button.setBackground(bgColor);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setBorder(BorderFactory.createEmptyBorder());
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
     }
 
     private void registerEvents() {
@@ -220,11 +287,21 @@ public class AddQuiz extends JFrame {
 
         btnAddQuestion.addActionListener(e -> addQuestion());
         btnDeleteQuestion.addActionListener(e -> deleteLastQuestion());
+        btnFinish.addActionListener(e -> finishQuizCreation());
+    }
 
-        btnBack.addActionListener(e -> {
-            new CreateNewQuiz(currentTeacher);
-            dispose();
-        });
+    private void loadExistingQuestions() {
+        addedQuestionIds.clear();
+
+        List<Question> existingQuestions = questionService.getQuestionsByQuiz(quizId);
+        for (Question question : existingQuestions) {
+            if (question.getQuestionId() != null && !question.getQuestionId().trim().isEmpty()) {
+                addedQuestionIds.add(question.getQuestionId());
+            }
+        }
+
+        questionCount = existingQuestions.size() + 1;
+        updateQuestionIndicators();
     }
 
     private void keepOnlyOneCorrect(JCheckBox selected) {
@@ -266,18 +343,52 @@ public class AddQuiz extends JFrame {
             return;
         }
 
-        addedQuestions.add("Question " + questionCount + " - Correct Answer: " + correctAnswer);
-
-        JOptionPane.showMessageDialog(
-                this,
-                "Question added successfully.",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE
+        try {
+            String createdQuestionId = questionService.addQuestionToQuiz(
+                    quizId,
+                    content,
+                    optionA,
+                    optionB,
+                    optionC,
+                    optionD,
+                    correctAnswer,
+                    explanation
             );
 
-        questionCount++;
-        lblQuestionNumber.setText("Question " + questionCount);
-        clearQuestionForm();
+            addedQuestionIds.add(createdQuestionId);
+            questionCount++;
+            updateQuestionIndicators();
+            clearQuestionForm();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Question added successfully.\nQuestion ID: " + createdQuestionId,
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+        } catch (IllegalArgumentException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    ex.getMessage(),
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE
+            );
+        } catch (IllegalStateException ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    ex.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Unexpected error: " + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
     }
 
     private String getCorrectAnswer() {
@@ -320,33 +431,130 @@ public class AddQuiz extends JFrame {
         cbB.setSelected(false);
         cbC.setSelected(false);
         cbD.setSelected(false);
+
+        txtQuestionContent.requestFocus();
     }
 
     private void deleteLastQuestion() {
-        if (addedQuestions.isEmpty()) {
+        if (addedQuestionIds.isEmpty()) {
             JOptionPane.showMessageDialog(
                     this,
-                    "There is no added question to delete.",
+                    "There is no saved question to delete.",
                     "No Question",
                     JOptionPane.WARNING_MESSAGE
             );
             return;
         }
 
-        addedQuestions.remove(addedQuestions.size() - 1);
+        String lastQuestionId = addedQuestionIds.get(addedQuestionIds.size() - 1);
+
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "Do you want to delete the last saved question?\nQuestion ID: " + lastQuestionId,
+                "Confirm Delete",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+        );
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        boolean deleted = questionService.deleteQuestionById(lastQuestionId);
+
+        if (!deleted) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Failed to delete the last saved question from database.",
+                    "Delete Failed",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+
+        addedQuestionIds.remove(addedQuestionIds.size() - 1);
 
         if (questionCount > 1) {
             questionCount--;
         }
 
-        lblQuestionNumber.setText("Question " + questionCount);
+        updateQuestionIndicators();
 
         JOptionPane.showMessageDialog(
                 this,
-                "Last added question deleted.",
+                "Last saved question deleted successfully.",
                 "Deleted",
                 JOptionPane.INFORMATION_MESSAGE
+        );
+    }
+
+    private void finishQuizCreation() {
+        if (addedQuestionIds.isEmpty()) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Please add at least one question before finishing this quiz.",
+                    "No Questions Added",
+                    JOptionPane.WARNING_MESSAGE
             );
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "You have added " + addedQuestionIds.size() + " question(s) to this quiz.\n"
+                        + "Do you want to finish and return to Teacher Dashboard?",
+                "Finish Quiz",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE
+        );
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        JOptionPane.showMessageDialog(
+                this,
+                "Quiz setup completed successfully.",
+                "Finished",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        new TeacherDashboard(currentTeacher).setVisible(true);
+        dispose();
+    }
+
+    private void updateQuestionIndicators() {
+        lblQuestionNumber.setText("Question " + questionCount);
+        lblSavedCountValue.setText(String.valueOf(addedQuestionIds.size()));
+        updateActionButtonsState();
+    }
+
+    private void updateActionButtonsState() {
+        boolean hasSavedQuestions = !addedQuestionIds.isEmpty();
+
+        btnFinish.setEnabled(hasSavedQuestions);
+        btnDeleteQuestion.setEnabled(hasSavedQuestions);
+
+        if (hasSavedQuestions) {
+            btnFinish.setBackground(new Color(43, 31, 115));
+            btnFinish.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+            btnDeleteQuestion.setBackground(new Color(171, 85, 47));
+            btnDeleteQuestion.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        } else {
+            btnFinish.setBackground(new Color(150, 150, 150));
+            btnFinish.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+
+            btnDeleteQuestion.setBackground(new Color(170, 170, 170));
+            btnDeleteQuestion.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+        }
+
+        btnFinish.repaint();
+        btnDeleteQuestion.repaint();
+    }
+
+    private String safeText(String value) {
+        return value == null ? "-" : value.trim().isEmpty() ? "-" : value.trim();
     }
 
 //    public static void main(String[] args) {
@@ -354,13 +562,14 @@ public class AddQuiz extends JFrame {
 //            Teacher demoTeacher = new Teacher("T001", "Nguyen Minh Anh", "minhanh.teacher@gmail.com");
 //            new AddQuiz(
 //                    demoTeacher,
+//                    "Q010",
 //                    "Java Basics Quiz",
-//                    "Java, OOP",
+//                    "Java Basics",
 //                    "Easy",
 //                    "2026-04-10",
 //                    "2026-04-20",
 //                    "30",
-//                    "CS101 - Introduction to Programming"
+//                    "C001 - Grade 10 CS A"
 //            );
 //        });
 //    }

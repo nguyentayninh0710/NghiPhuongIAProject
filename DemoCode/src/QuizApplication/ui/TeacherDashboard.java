@@ -1,5 +1,5 @@
 package QuizApplication.ui;
-
+import javax.swing.plaf.basic.BasicButtonUI;
 import QuizApplication.model.ClassRoom;
 import QuizApplication.model.Quiz;
 import QuizApplication.model.Teacher;
@@ -286,12 +286,17 @@ public class TeacherDashboard extends JFrame {
     }
 
     private void styleButton(JButton button, Color bgColor) {
+        button.setUI(new BasicButtonUI());
         button.setPreferredSize(new Dimension(190, 42));
         button.setFocusPainted(false);
         button.setForeground(Color.WHITE);
         button.setBackground(bgColor);
         button.setFont(new Font("SansSerif", Font.BOLD, 16));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
     }
 
     private void registerEvents() {

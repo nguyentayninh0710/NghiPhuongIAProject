@@ -1,5 +1,5 @@
 package QuizApplication.ui;
-
+import javax.swing.plaf.basic.BasicButtonUI;
 import QuizApplication.model.Teacher;
 import com.github.lgooddatepicker.components.DatePicker;
 import com.github.lgooddatepicker.components.DatePickerSettings;
@@ -180,11 +180,16 @@ public class ResultsDashboard extends JFrame {
     }
 
     private void styleButton(JButton button, Color bgColor, int fontSize) {
+        button.setUI(new BasicButtonUI());
         button.setFont(new Font("SansSerif", Font.BOLD, fontSize));
         button.setForeground(Color.WHITE);
         button.setBackground(bgColor);
         button.setFocusPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setOpaque(true);
+        button.setContentAreaFilled(true);
+        button.setBorderPainted(false);
+        button.setBorder(BorderFactory.createEmptyBorder(8, 14, 8, 14));
     }
 
     private void registerEvents() {
